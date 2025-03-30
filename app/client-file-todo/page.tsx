@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 
 import { TodoItem } from "../client-todo/page";
 import { CheckIcon } from "@/components/CheckIcon";
+import { set } from "mongoose";
 
 const Page = () => {
   const [todos, setTodos] = useState<TodoItem[]>();
@@ -17,8 +18,7 @@ const Page = () => {
           method: "GET",
         });
         const data = await result.json();
-
-        setTodos(data.data.todos);
+        setTodos(data.data);
       } catch (error) {
       } finally {
         setLoading(false);
@@ -34,7 +34,7 @@ const Page = () => {
         body: JSON.stringify({ text: inputValue }),
       });
       const data = await result.json();
-      setTodos(data.todos);
+      setTodos([...(todos || []), data.newTodo]);
       setInputValue("");
     } catch (error) {
       console.log(error);
@@ -45,11 +45,12 @@ const Page = () => {
     try {
       const result = await fetch(`/api/todos`, {
         method: "DELETE",
-        body: JSON.stringify({ id: id}),
+        body: JSON.stringify({ id: id }),
       });
       const data = await result.json();
-      if (data.success) {
-        setTodos(todos?.filter((todo) => todo.id !== id));
+      if (data.deletedTodoId.id === id) {
+        const newTodos = todos?.filter((todo) => todo.id !== id);
+        setTodos(newTodos);
       }
     } catch (error) {
       console.log(error);
@@ -60,10 +61,10 @@ const Page = () => {
     try {
       const result = await fetch(`/api/todos`, {
         method: "PATCH",
-        body: JSON.stringify({ id: id}),
+        body: JSON.stringify({ id: id }),
       });
       const data = await result.json();
-      if (data.success) {
+      if (data.PatchedTodoId.id === id) {
         setTodos(
           todos?.map((todo) =>
             todo.id === id ? { ...todo, completed: !todo.completed } : todo
@@ -108,9 +109,7 @@ const Page = () => {
               className="flex items-center justify-between p-2 border-b border-gray-200 last:border-b-0"
             >
               <div className="flex items-center">
-            {
-                todo.completed && <CheckIcon />
-            }
+                {todo.completed && <CheckIcon />}
                 <span
                   className={`${
                     todo.completed ? "line-through text-gray-500" : ""
@@ -126,16 +125,14 @@ const Page = () => {
                 >
                   Delete
                 </button>
-                {
-                    !todo.completed && (
-                        <button
-                        onClick={() => handleToggleComplete(todo.id)}
-                        className="bg-green-500 hover:bg-green-700 0 px-3 py-2 rounded-lg"
-                        >
-                        <CheckIcon />
-                        </button>
-                    )
-                }
+                {!todo.completed && (
+                  <button
+                    onClick={() => handleToggleComplete(todo.id)}
+                    className="bg-green-500 hover:bg-green-700 0 px-3 py-2 rounded-lg"
+                  >
+                    <CheckIcon />
+                  </button>
+                )}
               </div>
             </li>
           ))

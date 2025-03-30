@@ -1,71 +1,31 @@
-import { promises as fs } from "fs";
+// import { getTodos } from '../../_dal/fileJsonTodoApi'
+// import { getTodos } from '../../_dal/mongoDbTodoApi'
 
-export async function GET(request: Request) {
-  const file = await fs.readFile(process.cwd() + "/app/todos.json", "utf8");
-  let data = JSON.parse(file);
+import { FactoryApi } from "@/app/_dal/factoryApi";
+
+const api = FactoryApi.getClass(process.env.DB_TYPE);
+
+export async function GET() {
+  const data = await api.getTodos(); 
   return Response.json({ data });
 }
 
 export async function POST(request: Request) {
- 
-
   const data = await request.json();
-  const file = await fs.readFile(process.cwd() + "/app/todos.json", "utf8");
-  let fileTodos = JSON.parse(file);
-  const randomId = Math.floor(Math.random() * 2121212);
-  const todos = fileTodos.todos;
-  console.log(todos);
-
-  todos.push({
-    id: randomId,
-    text: data.text,
-    completed: false,
-  });
-  await fs.writeFile(
-    process.cwd() + "/app/todos.json",
-    JSON.stringify({
-      todos: todos,
-    }),
-    "utf8"
-  );
-  return Response.json({ todos: todos });
+  const newTodoItem = await api.addTodo(data.text);
+  return Response.json({ newTodo: newTodoItem });
 }
 
-export async function PATCH(
-  request: Request,
-) {
-    const { id } = await request.json()
-  const file = await fs.readFile(process.cwd() + "/app/todos.json", "utf8");
-  const fileTodos = JSON.parse(file);
-  let todos = fileTodos.todos;
-  const todoIndex = todos.findIndex(
-    (todo: { id: Number | null }) => todo.id === Number(id)
-  );
-  todos[todoIndex].completed = !todos[todoIndex].completed;
-  await fs.writeFile(
-    process.cwd() + "/app/todos.json",
-    JSON.stringify({
-      todos: todos,
-    }),
-    "utf8"
-  );
-  return Response.json({ success: true });
+export async function PATCH(request: Request) {
+  const data = await request.json();
+  const { id } = data;
+  const PatchedTodoId = await api.markTodoComplete(id);
+  return Response.json({ PatchedTodoId: PatchedTodoId });
 }
 
-export async function DELETE(
-  request: Request,
-) {
-  const { id } = await request.json()
-  const file = await fs.readFile(process.cwd() + "/app/todos.json", "utf8");
-  const fileTodos = JSON.parse(file);
-  let todos = fileTodos.todos;
-  todos = todos.filter((todo: { id: Number | null }) => todo.id !== Number(id));
-  await fs.writeFile(
-    process.cwd() + "/app/todos.json",
-    JSON.stringify({
-      todos: todos,
-    }),
-    "utf8"
-  );
-  return Response.json({ success: true });
+export async function DELETE(request: Request) {
+  const data = await request.json();
+  const { id } = data;
+  const deletedTodoId = await api.deleteTodo(id);
+  return Response.json({ deletedTodoId: deletedTodoId });
 }

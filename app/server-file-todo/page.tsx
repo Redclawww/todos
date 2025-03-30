@@ -1,17 +1,13 @@
-import React from "react";
-import { promises as fs } from "fs";
+import React, { Suspense } from "react";
 import { TodoItem } from "../client-todo/page";
-import { addTodo, deleteTodo, MarkTodoComplete } from "../actions";
+import { addTodo, deleteTodo, getTodos, MarkTodoComplete } from "../actions";
 import { CheckIcon } from "@/components/CheckIcon";
 
-export default async function Page(){
-  const file = await fs.readFile(process.cwd() + "/app/todos.json", "utf8");
-  let data = JSON.parse(file);
-
+export default async function Page() {
+  const data = await getTodos();
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md text-gray-700">
       <h1 className="text-2xl font-bold mb-4 text-center">Todo List</h1>
-
       <form action={addTodo}>
         <div className="flex mb-4 gap-5">
           <input
@@ -28,53 +24,52 @@ export default async function Page(){
           </button>
         </div>
       </form>
-
-      <ul>
-        {data.todos.map((todo: TodoItem) => (
-          <li
-            key={todo.id}
-            className="flex items-center justify-between p-2 border-b border-gray-200 last:border-b-0"
-          >
-            <div className="flex items-center">
-              {todo.completed && <CheckIcon />}
-              <span
-                className={`${
-                  todo.completed ? "line-through ml-2 text-gray-500" : ""
-                }`}
-              >
-                {todo.text}
-              </span>
-            </div>
-            <div className="flex gap-2 text-white">
-              <form action={deleteTodo}>
-                <input type="hidden" name="id" value={todo.id} />
-                <button
-                  className="bg-red-500 bg:text-red-700  px-3 py-2 rounded-lg"
-                  type="submit"
+      <Suspense fallback={<p>Loading Todos</p>}>
+        <ul>
+          {data.map((todo: TodoItem) => (
+            <li
+              key={todo.id}
+              className="flex items-center justify-between p-2 border-b border-gray-200 last:border-b-0"
+            >
+              <div className="flex items-center">
+                {todo.completed && <CheckIcon />}
+                <span
+                  className={`${
+                    todo.completed ? "line-through ml-2 text-gray-500" : ""
+                  }`}
                 >
-                  Delete
-                </button>
-              </form>
-              {!todo.completed && (
-                <form action={MarkTodoComplete}>
+                  {todo.text}
+                </span>
+              </div>
+              <div className="flex gap-2 text-white">
+                <form action={deleteTodo}>
                   <input type="hidden" name="id" value={todo.id} />
-                  <button className="bg-green-500 hover:bg-green-700 0 px-3 py-2 rounded-lg">
-                    <CheckIcon />
+                  <button
+                    className="bg-red-500 bg:text-red-700  px-3 py-2 rounded-lg"
+                    type="submit"
+                  >
+                    Delete
                   </button>
                 </form>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
+                {!todo.completed && (
+                  <form action={MarkTodoComplete}>
+                    <input type="hidden" name="id" value={todo.id} />
+                    <button className="bg-green-500 hover:bg-green-700 0 px-3 py-2 rounded-lg">
+                      <CheckIcon />
+                    </button>
+                  </form>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Suspense>
 
-      {data.todos.length === 0 && (
+      {data.length === 0 && (
         <p className="text-center text-gray-500 mt-4">
           No Todos. Add a new Todo !
         </p>
       )}
     </div>
   );
-};
-
-
+}

@@ -46,10 +46,6 @@ const TodoApp = () => {
 
   };
 
-  const handleEditTodo = (id: number) => {
-    setInputValue(todos.filter((todo) => todo.id !== id)[0].text);
-  };
-
   const handleDeleteTodo = (id: number) => {
     setTodos(todos.filter((todo) => todo.id !== id));
   };
