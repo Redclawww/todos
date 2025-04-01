@@ -1,30 +1,13 @@
-import { revalidatePath } from "next/cache";
-import { JSON_SOURCE_FILE } from "./constants";
-import { promises as fs } from "fs";
-import dbConnect from "../lib/mongoDb";
-import TodoModel from "../lib/models/todo.model";
+import { ITodoApi, Todo } from "../ctypes";
+import { CreateTodoObject } from "../lib/helperFunctions";
+import { dbConnect } from "../lib/mongoDb";
 
-
-export type Todo = {
-  id: number;
-  text: string;
-  completed: boolean;
-};
-
-export interface ITodoApi {
-  getTodos(): Promise<Array<Todo>>;
-  addTodo(text: string): Promise<Todo>;
-  deleteTodo(id: number): Promise<{
-    id: number;
-  }>;
-  markTodoComplete(id: number): Promise<Todo>;
-}
 
 export class MongoDbTodoApi implements ITodoApi {
   async getTodos(): Promise<Array<Todo>> {
-    await dbConnect();
+    const db = await dbConnect();
     try {
-      const todos = await TodoModel.find({}).lean();
+      const todos = await db.collection<Todo>("todos").find().toArray();
       return todos;
     } catch (error) {
       console.log(error);
@@ -33,19 +16,17 @@ export class MongoDbTodoApi implements ITodoApi {
   }
 
   async addTodo(text: string): Promise<Todo> {
-    await dbConnect();
+    const db = await dbConnect();
     try {
-      const randomId = Math.floor(Math.random() * 2121212);
-      console.log(text);
-      
-      const newTodoItem: Todo = {
-        id: randomId,
-        text: text,
-        completed: false,
-      };
-      const todo = new TodoModel(newTodoItem);
-      await todo.save();
-      return newTodoItem;
+      const newTodo: Todo = CreateTodoObject(text);
+      const todo = await db
+        .collection<Todo>("todos")
+        .insertOne(newTodo);
+      if (!todo) {
+        throw new Error("Failed to add todo to MongoDB");
+      }
+
+      return newTodo;
     } catch (error) {
       console.log(error);
       throw new Error("Failed to add todo to MongoDB");
@@ -53,9 +34,11 @@ export class MongoDbTodoApi implements ITodoApi {
   }
 
   async deleteTodo(id: number): Promise<{ id: number }> {
-    await dbConnect();
+    const db = await dbConnect();
     try {
-      const deletedTodo = await TodoModel.findOneAndDelete({ id: id });
+      const deletedTodo = await db
+        .collection<Todo>("todos")
+        .findOneAndDelete({ id: id });
       if (!deletedTodo) {
         throw new Error("Todo not found");
       }
@@ -67,15 +50,24 @@ export class MongoDbTodoApi implements ITodoApi {
   }
 
   async markTodoComplete(id: number): Promise<Todo> {
-    await dbConnect();
+    const db = await dbConnect();
     try {
-      const todo = await TodoModel.findOne({ id: id });
+      const todo = await db.collection<Todo>("todos").findOne({ id: id });
       if (!todo) {
         throw new Error("Todo not found");
       }
       todo.completed = !todo.completed;
-      await todo.save();
-      return todo;
+      const updatedTodo = await db
+        .collection<Todo>("todos")
+        .findOneAndUpdate(
+          { id: id },
+          { $set: { completed: todo.completed } },
+          { returnDocument: "after" }
+        );
+      if (!updatedTodo) {
+        throw new Error("Failed to update todo in MongoDB");
+      }
+      return updatedTodo;
     } catch (error) {
       console.log(error);
       throw new Error("Failed to mark todo as complete in MongoDB");
