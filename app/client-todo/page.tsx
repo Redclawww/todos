@@ -1,15 +1,10 @@
 "use client";
 import { CheckIcon } from "@/components/CheckIcon";
 import React, { useEffect, useState } from "react";
-
-export interface TodoItem {
-  id: number;
-  text: string;
-  completed: boolean;
-}
+import { Todo } from "../ctypes";
 
 const TodoApp = () => {
-  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [todos, setTodos] = useState<Todo[]>([]);
   const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
