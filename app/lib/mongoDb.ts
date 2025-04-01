@@ -1,31 +1,43 @@
-import mongoose from 'mongoose';
+import { MongoClient, Db } from "mongodb";
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable');
+if (!process.env.MONGODB_URI) {
+  throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
+}
+if (!process.env.MONGODB_DB) {
+  throw new Error('Invalid/Missing environment variable: "MONGODB_DB"');
 }
 
-let cached = global.mongoose;
+const uri = process.env.MONGODB_URI;
+const dbName = process.env.MONGODB_DB;
+const options = {};
 
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+let client: MongoClient;
+let clientPromise: Promise<MongoClient>;
+
+declare global {
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-export async function dbConnect() {
-  if (cached.conn) {
-    return cached.conn;
+if (process.env.NODE_ENV === "development") {
+  let globalWithMongo = global as typeof globalThis & {
+    _mongoClientPromise?: Promise<MongoClient>;
+  };
+
+  if (!globalWithMongo._mongoClientPromise) {
+    client = new MongoClient(uri, options);
+    globalWithMongo._mongoClientPromise = client.connect();
+    console.log("New MongoDB connection established (Development)");
   }
-
-  if (!cached.promise) {
-    const uri = MONGODB_URI as string; 
-    cached.promise = mongoose.connect(uri).then((mongoose) => {
-      return mongoose;
-    });
-  }
-  cached.conn = await cached.promise;
-  console.log('MongoDB connected');
-  return cached.conn;
+  clientPromise = globalWithMongo._mongoClientPromise;
+} else {
+  client = new MongoClient(uri, options);
+  clientPromise = client.connect();
+  console.log("New MongoDB connection established (Production)");
 }
 
-export default dbConnect;
+
+export async function dbConnect(): Promise<Db> {
+  const client = await clientPromise;
+  const db = client.db(dbName);
+  return db;
+}
