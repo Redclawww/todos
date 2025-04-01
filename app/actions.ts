@@ -1,8 +1,9 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { FactoryApi } from "./_dal/factoryApi";
+import { DbType } from "./ctypes";
 
-const api = FactoryApi.getClass(process.env.DB_TYPE);
+const api = FactoryApi.getClass(process.env.DB_TYPE as DbType);
 
 export async function getTodos() {
   const data = await api.getTodos();

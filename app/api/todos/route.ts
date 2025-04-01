@@ -1,9 +1,7 @@
-// import { getTodos } from '../../_dal/fileJsonTodoApi'
-// import { getTodos } from '../../_dal/mongoDbTodoApi'
-
 import { FactoryApi } from "@/app/_dal/factoryApi";
+import { DbType } from "@/app/ctypes";
 
-const api = FactoryApi.getClass(process.env.DB_TYPE);
+const api = FactoryApi.getClass(process.env.DB_TYPE as DbType);
 
 export async function GET() {
   const data = await api.getTodos(); 
