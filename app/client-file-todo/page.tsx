@@ -1,12 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
-
-import { TodoItem } from "../client-todo/page";
 import { CheckIcon } from "@/components/CheckIcon";
-import { set } from "mongoose";
+import { Todo } from "../ctypes";
 
 const Page = () => {
-  const [todos, setTodos] = useState<TodoItem[]>();
+  const [todos, setTodos] = useState<Todo[]>();
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
 

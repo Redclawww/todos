@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
-import { TodoItem } from "../client-todo/page";
 import { addTodo, deleteTodo, getTodos, MarkTodoComplete } from "../actions";
 import { CheckIcon } from "@/components/CheckIcon";
+import { Todo } from "../ctypes";
 
 export default async function Page() {
   const data = await getTodos();
@@ -26,7 +26,7 @@ export default async function Page() {
       </form>
       <Suspense fallback={<p>Loading Todos</p>}>
         <ul>
-          {data.map((todo: TodoItem) => (
+          {data.map((todo: Todo) => (
             <li
               key={todo.id}
               className="flex items-center justify-between p-2 border-b border-gray-200 last:border-b-0"
